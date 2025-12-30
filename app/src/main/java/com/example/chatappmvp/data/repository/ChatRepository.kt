@@ -8,7 +8,9 @@ import com.example.chatappmvp.data.model.Message
 import com.example.chatappmvp.data.offline.ChatDatabase
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class ChatRepository @Inject constructor(
     val dataBase: ChatDatabase
 ) {
