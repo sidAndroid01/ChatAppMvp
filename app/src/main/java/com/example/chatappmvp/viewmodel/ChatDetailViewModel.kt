@@ -57,6 +57,12 @@ class ChatDetailViewModel @Inject constructor(
     private val _fullscreenImage = MutableStateFlow<String?>(null)
     val fullscreenImage: StateFlow<String?> = _fullscreenImage.asStateFlow()
 
+    private val _isSendingMessage = MutableStateFlow(false)
+    val isSendingMessage: StateFlow<Boolean> = _isSendingMessage.asStateFlow()
+
+    private var lastSendTime = 0L
+    private val minSendInterval = 500L
+
     val messages: Flow<PagingData<Message>> = repository.getMessagesForChatPaged(chatId)
         .cachedIn(viewModelScope)
 
@@ -108,6 +114,15 @@ class ChatDetailViewModel @Inject constructor(
         val text = messageText.value.trim()
         if (text.isEmpty()) return
 
+        val currentTime = System.currentTimeMillis()
+        if (_isSendingMessage.value || (currentTime - lastSendTime) < minSendInterval) {
+            Log.d("###", "sendMessage: Debounced - too soon after last send")
+            return
+        }
+
+        _isSendingMessage.value = true
+        lastSendTime = currentTime
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.sendTextMessage(
@@ -122,6 +137,10 @@ class ChatDetailViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 _uiState.value = ChatUiState.Error("Failed to send message: ${e.message}")
+            } finally {
+                // Re-enable sending after a small delay
+                kotlinx.coroutines.delay(minSendInterval)
+                _isSendingMessage.value = false
             }
         }
     }
@@ -158,6 +177,12 @@ class ChatDetailViewModel @Inject constructor(
     }
 
     fun sendImageMessage(context: Context, imageUri: Uri) {
+        if (_isSendingMessage.value) {
+            Log.d("###", "sendImageMessage: Already sending, debounced")
+            return
+        }
+        _isSendingMessage.value = true
+        lastSendTime = System.currentTimeMillis()
         viewModelScope.launch {
             try {
                 val file = copyImageToInternalStorage(context, imageUri)
@@ -180,6 +205,10 @@ class ChatDetailViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 _uiState.value = ChatUiState.Error("Failed to send image: ${e.message}")
+            }
+            finally {
+                kotlinx.coroutines.delay(500)
+                _isSendingMessage.value = false
             }
         }
     }

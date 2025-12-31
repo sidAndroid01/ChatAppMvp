@@ -104,6 +104,8 @@ fun ChatDetailScreen(
     val messageText by viewModel.messageText
     var showImageOptions by remember { mutableStateOf(false) }
     val fullscreenImage by viewModel.fullscreenImage.collectAsState()
+    val isSending by viewModel.isSendingMessage.collectAsState()
+
     val context = LocalContext.current
 
 //    val messages = (messagesState as? ChatUiState.Success)?.data ?: emptyList()
@@ -165,7 +167,8 @@ fun ChatDetailScreen(
         onDismiss = {
             Log.d("###", "ChatDetailScreen: dismissed")
             showImageOptions = false
-        }
+        },
+        isSending = isSending
     )
 }
 
@@ -186,6 +189,7 @@ fun ChatDetailScreenView(
     onGalleryClick: ()->Unit,
     onCameraClick: () -> Unit,
     onDismiss: ()->Unit,
+    isSending: Boolean,
     viewModel: ChatDetailViewModel = hiltViewModel<ChatDetailViewModel>()
 ) {
     Scaffold(
@@ -240,7 +244,8 @@ fun ChatDetailScreenView(
                 messageText = messageText,
                 onMessageChange = { viewModel.messageText.value = it },
                 onSendClick = { viewModel.sendMessage() },
-                onAttachClick = onAttachClick
+                onAttachClick = onAttachClick,
+                isSending = isSending
             )
         }
     ) { paddingValues ->
@@ -439,7 +444,8 @@ private fun MessageInputBar(
     messageText: String,
     onMessageChange: (String) -> Unit,
     onSendClick: () -> Unit,
-    onAttachClick: () -> Unit
+    onAttachClick: () -> Unit,
+    isSending: Boolean = false
 ) {
     Surface(
         modifier = Modifier
@@ -462,10 +468,12 @@ private fun MessageInputBar(
                     .padding(horizontal = 8.dp),
                 placeholder = { Text("Type a message...") },
                 maxLines = 4,
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(24.dp),
+                enabled = !isSending
             )
 
-            IconButton(onClick = onAttachClick) {
+            IconButton(onClick = onAttachClick,
+                enabled = !isSending ) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Attach image"
@@ -474,7 +482,7 @@ private fun MessageInputBar(
 
             IconButton(
                 onClick = onSendClick,
-                enabled = messageText.isNotBlank()
+                enabled = messageText.isNotBlank() && !isSending
             ) {
                 Icon(
                     imageVector = Icons.Default.Send,
