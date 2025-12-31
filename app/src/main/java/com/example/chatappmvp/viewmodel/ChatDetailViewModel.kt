@@ -54,6 +54,9 @@ class ChatDetailViewModel @Inject constructor(
     private val _cameraImageUri = MutableStateFlow<Uri?>(null)
     val cameraImageUri: StateFlow<Uri?> = _cameraImageUri.asStateFlow()
 
+    private val _fullscreenImage = MutableStateFlow<String?>(null)
+    val fullscreenImage: StateFlow<String?> = _fullscreenImage.asStateFlow()
+
     val messages: Flow<PagingData<Message>> = repository.getMessagesForChatPaged(chatId)
         .cachedIn(viewModelScope)
 
@@ -232,5 +235,13 @@ class ChatDetailViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun showImageFullscreen(imagePath: String) {
+        _fullscreenImage.value = imagePath
+    }
+
+    fun closeImageFullscreen() {
+        _fullscreenImage.value = null
     }
 }
