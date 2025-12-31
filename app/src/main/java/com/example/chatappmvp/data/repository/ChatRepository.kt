@@ -28,6 +28,18 @@ class ChatRepository @Inject constructor(
         return dataBase.messageDao().getMessagesForChatFlow(chatId)
     }
 
+    fun getMessagesForChatPaged(chatId: String): Flow<PagingData<Message>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 10,
+                prefetchDistance = 5,
+                enablePlaceholders = false,
+                initialLoadSize = 15
+            ),
+            pagingSourceFactory = { dataBase.messageDao().getMessagesForChatPaging(chatId) }
+        ).flow
+    }
+
     fun getChatById(chatId: String): Flow<Chat?> {
         return dataBase.chatDao().getChatFlowById(chatId)
     }

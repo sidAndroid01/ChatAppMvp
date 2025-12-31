@@ -9,6 +9,8 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.example.chatappmvp.data.model.Chat
 import com.example.chatappmvp.data.model.Message
 import com.example.chatappmvp.data.model.MessageSender
@@ -17,6 +19,7 @@ import com.example.chatappmvp.utils.ChatUiState
 import com.example.chatappmvp.utils.aisimulator.AIAgentSimulator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +53,9 @@ class ChatDetailViewModel @Inject constructor(
 
     private val _cameraImageUri = MutableStateFlow<Uri?>(null)
     val cameraImageUri: StateFlow<Uri?> = _cameraImageUri.asStateFlow()
+
+    val messages: Flow<PagingData<Message>> = repository.getMessagesForChatPaged(chatId)
+        .cachedIn(viewModelScope)
 
     val messageText = mutableStateOf("")
 

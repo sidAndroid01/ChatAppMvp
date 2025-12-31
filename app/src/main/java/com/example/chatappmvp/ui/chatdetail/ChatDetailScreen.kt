@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +34,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,8 +58,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.chatappmvp.R
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -81,7 +85,8 @@ fun ChatDetailScreen(
     onBackClick: () -> Unit
 ) {
 
-    val messagesState by viewModel.uiState.collectAsState()
+//    val messagesState by viewModel.uiState.collectAsState()
+    val messagesPaged = viewModel.messages.collectAsLazyPagingItems()
     val chat by viewModel.currChat.collectAsState()
     val listState = rememberLazyListState()
     val isEditingTitle by viewModel.isEditingTitle.collectAsState()
@@ -90,7 +95,7 @@ fun ChatDetailScreen(
     var showImageOptions by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    val messages = (messagesState as? ChatUiState.Success)?.data ?: emptyList()
+//    val messages = (messagesState as? ChatUiState.Success)?.data ?: emptyList()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -108,14 +113,20 @@ fun ChatDetailScreen(
         }
     }
 
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+//    LaunchedEffect(messages.size) {
+//        if (messages.isNotEmpty()) {
+//            listState.animateScrollToItem(messagesPaged.size - 1)
+//        }
+//    }
+
+    LaunchedEffect(messagesPaged.itemCount) {
+        if (messagesPaged.itemCount > 0) {
+            listState.animateScrollToItem(messagesPaged.itemCount - 1)
         }
     }
 
     ChatDetailScreenView(
-        messagesState,
+        messagesPaged,
         chat,
         listState,
         isEditingTitle,
@@ -150,7 +161,7 @@ fun ChatDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreenView(
-    messagesState: ChatUiState<List<Message>>,
+    messages: LazyPagingItems<Message>,
     chatState: ChatUiState<Chat>,
     listState: LazyListState,
     isEditingTitle: Boolean,
@@ -180,7 +191,9 @@ fun ChatDetailScreenView(
                         else "Chat"
                         Text(
                             text = currChatTitle,
-                            modifier = Modifier.clickable { viewModel.startEditingTitle() }
+                            modifier = Modifier.clickable { viewModel.startEditingTitle() },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 },
@@ -222,40 +235,86 @@ fun ChatDetailScreenView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
         ) {
-            when (messagesState) {
-                is ChatUiState.Loading -> {
-                    LoadingState("messages")
-                }
-                is ChatUiState.Success -> {
-                    val messages = messagesState.data
-                    if (messages.isEmpty()) {
+//            when (messagesState) {
+//                is ChatUiState.Loading -> {
+//                    LoadingState("messages")
+//                }
+//                is ChatUiState.Success -> {
+//                    val messages = messagesState.data
+//                    if (messages.isEmpty()) {
+//                        EmptyState("messages", "Start the conversation")
+//                    } else {
+//                        LazyColumn(
+//                            state = listState,
+//                            modifier = Modifier.weight(1f),
+//                            verticalArrangement = Arrangement.spacedBy(8.dp)
+//                        ) {
+//                            items(
+//                                items = messages,
+//                                key = { message -> message.id }
+//                            ) { message ->
+//                                MessageItem(message) {}
+//                            }
+//                        }
+//                    }
+//                }
+//                is ChatUiState.Error -> {
+//                    ErrorState("Error loading the messages")
+//                }
+//                is ChatUiState.Empty -> {
+//                    EmptyState("messages", "Start the conversation")
+//                }
+
+                when {
+                    messages.loadState.refresh is LoadState.Loading -> {
+                        LoadingState("messages")
+                    }
+
+                    messages.loadState.refresh is LoadState.Error -> {
+                        val error = (messages.loadState.refresh as LoadState.Error).error
+                        ErrorState("Error loading messages: ${error.message}")
+                    }
+
+                    messages.itemCount == 0 -> {
                         EmptyState("messages", "Start the conversation")
-                    } else {
+                    }
+
+                    else -> {
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier
-                                .fillMaxSize(),
+                            modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(
-                                items = messages,
-                                key = { message -> message.id }
-                            ) { message ->
-                                MessageItem(message) {}
+                                count = messages.itemCount,
+                                key = { index -> messages[index]?.id ?: index }
+                            ) { index ->
+                                val message = messages[index]
+                                message?.let {
+                                    MessageItem(it) {}
+                                }
+                            }
+
+                            // Show loading indicator when loading more items
+                            if (messages.loadState.append is LoadState.Loading) {
+                                item {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                is ChatUiState.Error -> {
-                    ErrorState("Error loading the messages")
-                }
-                is ChatUiState.Empty -> {
-                    EmptyState("messages", "Start the conversation")
-                }
             }
         }
-    }
 
     if (showImageOptions) {
         ImagePickerDialog(
