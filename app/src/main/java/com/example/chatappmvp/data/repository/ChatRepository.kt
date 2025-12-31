@@ -19,6 +19,14 @@ class ChatRepository @Inject constructor(
         return dataBase.chatDao().getAllChatsFlow()
     }
 
+    fun getMessagesForChat(chatId: String): Flow<List<Message>> {
+        return dataBase.messageDao().getMessagesForChatFlow(chatId)
+    }
+
+    fun getChatById(chatId: String): Flow<Chat?> {
+        return dataBase.chatDao().getChatById(chatId)
+    }
+
     fun getAllChatsPaging(): Flow<PagingData<Chat>> {
         return Pager(
             config = PagingConfig(

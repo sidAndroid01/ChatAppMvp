@@ -1,12 +1,15 @@
 package com.example.chatappmvp.utils
 
+import android.text.format.DateUtils.isToday
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.log10
+import kotlin.math.pow
 
-object TimeFormatter {
+object FormatterUtil {
     fun formatChatListTime(timestamp: Long): String {
         val now = System.currentTimeMillis()
         val diff = now - timestamp
@@ -49,5 +52,49 @@ object TimeFormatter {
         val messageYear = calendar.get(Calendar.YEAR)
 
         return currentYear == messageYear
+    }
+
+    fun formatFileSize(bytes: Long): String {
+        if (bytes <= 0) return "0 B"
+
+        val units = arrayOf("B", "KB", "MB", "GB", "TB")
+        val digitGroups = (log10(bytes.toDouble()) / log10(1024.0)).toInt()
+
+        val size = bytes / 1024.0.pow(digitGroups.toDouble())
+
+        return if (digitGroups == 0) {
+            "${bytes.toInt()} ${units[digitGroups]}"
+        } else {
+            "%.1f ${units[digitGroups]}".format(size)
+        }
+    }
+
+    fun formatMessageTime(timestamp: Long): String {
+        val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+        val timeStr = timeFormat.format(Date(timestamp))
+
+        return when {
+            isToday(timestamp) -> timeStr
+            isYesterday(timestamp) -> "Yesterday, $timeStr"
+            isThisWeek(timestamp) -> {
+                val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+                "${dayFormat.format(Date(timestamp))}, $timeStr"
+            }
+            isThisYear(timestamp) -> {
+                val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
+                "${dateFormat.format(Date(timestamp))}, $timeStr"
+            }
+            else -> {
+                val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+                "${dateFormat.format(Date(timestamp))}, $timeStr"
+            }
+        }
+    }
+
+    private fun isThisWeek(timestamp: Long): Boolean {
+        val now = System.currentTimeMillis()
+        val diff = now - timestamp
+        val days = TimeUnit.MILLISECONDS.toDays(diff)
+        return days < 7
     }
 }

@@ -29,8 +29,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.chatappmvp.data.model.Chat
-import com.example.chatappmvp.utils.ChatListUiState
-import com.example.chatappmvp.utils.TimeFormatter
+import com.example.chatappmvp.utils.ChatUiState
+import com.example.chatappmvp.utils.EmptyState
+import com.example.chatappmvp.utils.ErrorState
+import com.example.chatappmvp.utils.LoadingState
+import com.example.chatappmvp.utils.FormatterUtil
 import com.example.chatappmvp.viewmodel.ChatListingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,92 +61,28 @@ fun ChatListScreen(
                 .padding(paddingValues)
         ) {
             when (uiState) {
-                is ChatListUiState.Loading -> {
+                is ChatUiState.Loading -> {
                     Log.d("###", "ChatListScreen: coming to loading state")
-                    LoadingState()
+                    LoadingState("chat")
                 }
 
-                is ChatListUiState.Empty -> {
+                is ChatUiState.Empty -> {
                     Log.d("###", "ChatListScreen: coming to empty state")
-                    EmptyState()
+                    EmptyState("conversations", "Create a new conversation by tapping on the below + button")
                 }
 
-                is ChatListUiState.Success -> {
+                is ChatUiState.Success -> {
                     Log.d("###", "ChatListScreen: coming to success state")
                     ChatList(
-                        chats = (uiState as ChatListUiState.Success).chats,
+                        chats = (uiState as ChatUiState.Success<List<Chat>>).data,
                         onChatClick = onChatClick
                     )
                 }
 
-                is ChatListUiState.Error -> {
-                    ErrorState((uiState as ChatListUiState.Error).message)
+                is ChatUiState.Error -> {
+                    ErrorState((uiState as ChatUiState.Error).message)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun LoadingState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Loading chats...",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Error",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.error
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "No conversations yet",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Tap the + button to start a new chat",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
         }
     }
 }
@@ -200,7 +139,7 @@ private fun ChatItemContent(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = TimeFormatter.formatChatListTime(chat.lastMessageTimestamp),
+                    text = FormatterUtil.formatChatListTime(chat.lastMessageTimestamp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
