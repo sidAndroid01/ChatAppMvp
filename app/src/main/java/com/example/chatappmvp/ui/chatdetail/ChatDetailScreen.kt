@@ -60,7 +60,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.chatappmvp.R
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.chatappmvp.data.model.Chat
 import com.example.chatappmvp.data.model.Message
 import com.example.chatappmvp.data.model.MessageSender
@@ -306,8 +308,15 @@ private fun MessageItem(
                     }
                     MessageType.FILE -> {
                         message.file?.let { file ->
+                            val imageRequest = ImageRequest.Builder(LocalContext.current)
+                                .data(file.path)
+                                .crossfade(true)
+                                .placeholder(R.drawable.ic_launcher_foreground)
+                                .error(R.drawable.ic_error_img)
+                                .build()
+                            val painter = rememberAsyncImagePainter(model = imageRequest)
                             Image(
-                                painter = rememberAsyncImagePainter(file.path),
+                                painter = painter,
                                 contentDescription = "Shared image",
                                 modifier = Modifier
                                     .fillMaxWidth()
