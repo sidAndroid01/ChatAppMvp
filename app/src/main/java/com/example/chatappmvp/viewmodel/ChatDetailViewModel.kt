@@ -2,8 +2,10 @@ package com.example.chatappmvp.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.FileProvider
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,7 +48,8 @@ class ChatDetailViewModel @Inject constructor(
     private val _editedTitle = MutableStateFlow("")
     val editedTitle: StateFlow<String> = _editedTitle.asStateFlow()
 
-
+    private val _cameraImageUri = MutableStateFlow<Uri?>(null)
+    val cameraImageUri: StateFlow<Uri?> = _cameraImageUri.asStateFlow()
 
     val messageText = mutableStateOf("")
 
@@ -185,5 +188,43 @@ class ChatDetailViewModel @Inject constructor(
 
         inputStream.close()
         return file
+    }
+
+    fun createCameraImageUri(context: Context): Uri {
+        val timestamp = System.currentTimeMillis()
+        val fileName = "camera_${timestamp}.jpg"
+
+        val picturesDir = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "")
+        if (!picturesDir.exists()) {
+            picturesDir.mkdirs()
+        }
+
+        val imageFile = File(picturesDir, fileName)
+
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            imageFile
+        )
+
+        _cameraImageUri.value = uri
+
+        return uri
+    }
+
+    fun handleCameraPhoto(context: Context) {
+        viewModelScope.launch {
+            try {
+                _cameraImageUri.value?.let { uri ->
+                    sendImageMessage(context, uri)
+
+                    _cameraImageUri.value = null
+                }
+            } catch (e: Exception) {
+                _uiState.value = ChatUiState.Error(
+                    "Failed to process camera photo: ${e.message}"
+                )
+            }
+        }
     }
 }

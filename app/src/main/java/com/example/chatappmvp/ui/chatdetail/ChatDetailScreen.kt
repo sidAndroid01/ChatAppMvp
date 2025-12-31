@@ -96,6 +96,16 @@ fun ChatDetailScreen(
         uri?.let { viewModel.sendImageMessage(context, it) }
     }
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            viewModel.handleCameraPhoto(context)
+        } else {
+            Log.d("###", "ChatDetailScreen: Camera capture cancelled or failed")
+        }
+    }
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
@@ -119,6 +129,14 @@ fun ChatDetailScreen(
             showImageOptions = false
             galleryLauncher.launch("image/*")
         },
+        onCameraClick = {
+            Log.d("###", "ChatDetailScreen: camera clicked")
+            showImageOptions = false
+            // Create a URI for the camera to save the photo to
+            val photoUri = viewModel.createCameraImageUri(context)
+            // Launch camera with the URI
+            cameraLauncher.launch(photoUri)
+        },
         onDismiss = {
             Log.d("###", "ChatDetailScreen: dismissed")
             showImageOptions = false
@@ -140,6 +158,7 @@ fun ChatDetailScreenView(
     showImageOptions: Boolean,
     onAttachClick: () -> Unit,
     onGalleryClick: ()->Unit,
+    onCameraClick: () -> Unit,
     onDismiss: ()->Unit,
     viewModel: ChatDetailViewModel = hiltViewModel<ChatDetailViewModel>()
 ) {
@@ -242,9 +261,7 @@ fun ChatDetailScreenView(
                 onGalleryClick()
             },
             onCameraClick = {
-//                showImageOptions = false
-//                // Camera launch would go here
-//                // Requires additional file provider setup
+                onCameraClick()
             },
             onDismiss = {
                 onDismiss()
