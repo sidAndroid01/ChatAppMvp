@@ -31,4 +31,7 @@ interface ChatDao {
 
     @Update
     suspend fun updateChat(chat: Chat)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChat(chat: Chat)
 }

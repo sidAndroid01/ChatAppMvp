@@ -143,4 +143,21 @@ class ChatRepository @Inject constructor(
 
         return messageId
     }
+
+    suspend fun createChat(): String {
+        val chatId = UUID.randomUUID().toString()
+        val currentTime = System.currentTimeMillis()
+
+        val newChat = Chat(
+            id = chatId,
+            title = "New Chat",
+            lastMessage = "",
+            lastMessageTimestamp = currentTime,
+            createdAt = currentTime,
+            updatedAt = currentTime
+        )
+
+        dataBase.chatDao().insertChat(newChat)
+        return chatId
+    }
 }

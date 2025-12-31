@@ -48,8 +48,8 @@ class AIAgentSimulator @Inject constructor(
             val thinkingDelay = Random.nextLong(1000, 2000)
             delay(thinkingDelay)
 
-            val replyType = if (Random.nextDouble() <= 0.5) "file"
-            else "text"
+            val replyType = if (Random.nextDouble() <= 0.7) "text"
+            else "file"
 
             Log.d("AIAgentSimulator", "processMessageAndMaybeReply: coming inside replyType $replyType")
 

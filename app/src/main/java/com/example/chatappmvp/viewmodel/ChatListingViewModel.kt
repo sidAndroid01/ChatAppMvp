@@ -6,11 +6,13 @@ import com.example.chatappmvp.data.model.Chat
 import com.example.chatappmvp.data.repository.ChatRepository
 import com.example.chatappmvp.utils.ChatUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -41,6 +43,17 @@ class ChatListingViewModel @Inject constructor(private val repository: ChatRepos
                         _uiState.value= ChatUiState.Success(chatList)
                     }
                 }
+        }
+    }
+
+    fun createNewChat(onChatCreated: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val chatId = repository.createChat()
+                onChatCreated(chatId)
+            } catch (e: Exception) {
+                _uiState.value = ChatUiState.Error("Failed to create chat: ${e.message}")
+            }
         }
     }
 
