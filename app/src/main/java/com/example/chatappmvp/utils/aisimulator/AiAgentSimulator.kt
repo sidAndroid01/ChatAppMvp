@@ -39,7 +39,7 @@ class AIAgentSimulator @Inject constructor(
         val currentUserMessageCount = repository.getUserMessageCount(chatId)
         Log.d("AIAgentSimulator", "processMessageAndMaybeReply: coming to this currentUserMessageCount $currentUserMessageCount")
 
-        val replyThreshold = Random.nextInt(4, 8)
+        val replyThreshold = Random.nextInt(4, 6)
 
         Log.d("AIAgentSimulator", "processMessageAndMaybeReply: coming to this reply threshold $replyThreshold")
         Log.d("AIAgentSimulator", "processMessageAndMaybeReply: coming to this should reply ${currentUserMessageCount % replyThreshold == 0}")

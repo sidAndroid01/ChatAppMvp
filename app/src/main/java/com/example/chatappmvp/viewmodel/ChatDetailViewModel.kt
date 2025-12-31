@@ -1,5 +1,7 @@
 package com.example.chatappmvp.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
@@ -18,6 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -139,5 +143,47 @@ class ChatDetailViewModel @Inject constructor(
 
     fun updateEditedTitle(newTitle: String) {
         _editedTitle.value = newTitle
+    }
+
+    fun sendImageMessage(context: Context, imageUri: Uri) {
+        viewModelScope.launch {
+            try {
+                val file = copyImageToInternalStorage(context, imageUri)
+                val fileSize = file.length()
+
+                val filePath = file.absolutePath
+
+                repository.sendFileMessage(
+                    chatId = chatId,
+                    filePath = filePath,
+                    fileSize = fileSize,
+                    thumbnailPath = filePath,
+                    caption = "",
+                    sender = MessageSender.USER
+                )
+
+                aiAgentSimulator.processMessageAndMaybeReply(
+                    chatId = chatId,
+                    isUserMessage = true
+                )
+            } catch (e: Exception) {
+                _uiState.value = ChatUiState.Error("Failed to send image: ${e.message}")
+            }
+        }
+    }
+
+    private fun copyImageToInternalStorage(context: Context, uri: Uri): File {
+        val inputStream = context.contentResolver.openInputStream(uri)
+            ?: throw Exception("Failed to open image")
+
+        val timestamp = System.currentTimeMillis()
+        val file = File(context.filesDir, "image_$timestamp.jpg")
+
+        FileOutputStream(file).use { outputStream ->
+            inputStream.copyTo(outputStream)
+        }
+
+        inputStream.close()
+        return file
     }
 }
