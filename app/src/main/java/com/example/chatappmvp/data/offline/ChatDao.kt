@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.chatappmvp.data.model.Chat
 import kotlinx.coroutines.flow.Flow
 
@@ -23,5 +24,11 @@ interface ChatDao {
     suspend fun insertChats(chats: List<Chat>)
 
     @Query("SELECT * FROM chats WHERE id = :chatId")
-    fun getChatById(chatId: String): Flow<Chat?>
+    fun getChatFlowById(chatId: String): Flow<Chat?>
+
+    @Query("SELECT * FROM chats WHERE id = :chatId")
+    suspend fun getChatById(chatId: String): Chat?
+
+    @Update
+    suspend fun updateChat(chat: Chat)
 }

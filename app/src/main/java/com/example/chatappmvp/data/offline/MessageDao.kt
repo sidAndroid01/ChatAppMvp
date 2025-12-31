@@ -18,4 +18,10 @@ interface MessageDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<Message>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: Message)
+
+    @Query("SELECT COUNT(*) FROM messages WHERE chatId = :chatId AND sender = 'USER'")
+    suspend fun getUserMessageCount(chatId: String): Int
 }
